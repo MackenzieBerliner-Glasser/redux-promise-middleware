@@ -3,25 +3,28 @@ export const isPromise = (value) => {
     return value && typeof value.then === 'function';
   }
   return false;
- }
-
-const middleware = store => next => action => {
-
 };
 
+export const middleware = store => next => action => {
 
-// function isPromise(object){
-//   if(Promise && Promise.resolve){
-//     return Promise.resolve(object) == object;
-//   }else{
-//     throw "Promise not supported in your environment"
-//   }
-// }
+  if(!isPromise(action.payload)) {
+    return next(action);
+  }
+  store.dispatch({ type: 'LOAD_START' });
+  action.payload.then(result => {
+    next({
+      type: action.type,
+      payload: result
+    });
+    store.dispatch({ type: 'LOAD_END' });
+  })
+    .catch(error => {
+      store.dispatch({ type: 'LOAD_END' });
+      store.dispatch({
+        type: 'ERROR',
+        payload: error
+      });
 
-// var i = 1;
-// var p = new Promise(function(resolve,reject){
-//   resolve()
-// });
-
-// console.log(isPromise(i));
-// console.log(isPromise(p));
+      throw error;
+    });
+};
